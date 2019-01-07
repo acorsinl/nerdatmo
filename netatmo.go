@@ -1,10 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
-
-	"github.com/go-resty/resty"
+	"strconv"
+	"strings"
 )
 
 type NetatmoAuth struct {
@@ -15,19 +19,29 @@ type NetatmoAuth struct {
 	ExpireIn     int      `json:"expire_in"`
 }
 
-func authenticate(client *resty.Client) string {
-	client.SetFormData(map[string]string{
-		"grant_type":       "password",
-		"scope":            "read_station",
-		"client_id":        os.Getenv("CLIENT_ID"),
-		"client_secret":    os.Getenv("CLIENT_SECRET"),
-		"netatmo_username": os.Getenv("NETATMO_USERNAME"),
-		"netatmo_password": os.Getenv("NETATMO_PASSWORD")})
+func authenticateToNetatmo() *NetatmoAuth {
+	var netatmoAuth = new(NetatmoAuth)
 
-	response, err := client.R().SetResult(NetatmoAuth{}).Post("/oauth2/token")
-	if err != nil {
-		log.Fatal("Error retrieven access tokens: " + err.Error())
+	payload := url.Values{}
+	payload.Set("grant_type", "password")
+	payload.Set("scope", "read_station")
+	payload.Set("client_id", os.Getenv("CLIENT_ID"))
+	payload.Set("client_secret", os.Getenv("CLIENT_SECRET"))
+	payload.Set("username", os.Getenv("NETATMO_USERNAME"))
+	payload.Set("password", os.Getenv("NETATMO_PASSWORD"))
+
+	req, _ := http.NewRequest("POST", APIUrl+"/oauth2/token", strings.NewReader(payload.Encode()))
+	req.Header.Add("User-Agent", UserAgent)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Length", strconv.Itoa(len(payload.Encode())))
+
+	res, _ := http.DefaultClient.Do(req)
+
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	if err := json.Unmarshal(body, &netatmoAuth); err != nil {
+		log.Println("Error unmarshalling: " + err.Error())
 	}
-
-	return response.Result().(*NetatmoAuth).AccessToken
+	return netatmoAuth
 }
