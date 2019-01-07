@@ -38,8 +38,8 @@ type Body struct {
 type Devices struct {
 	Id              string        `json:"_id"`
 	CipherId        string        `json:"cipher_id"`
-	DateSetup       string        `json:"date_setup"`
-	LastSetup       string        `json:"last_setup"`
+	DateSetup       int           `json:"date_setup"`
+	LastSetup       int           `json:"last_setup"`
 	Type            string        `json:"type"`
 	LastStatusStore int           `json:"last_status_store"`
 	ModuleName      string        `json:"module_name"`
@@ -57,10 +57,10 @@ type Devices struct {
 
 // Place holds place information
 type Place struct {
-	City     string   `json:"city"`
-	Country  string   `json:"country"`
-	Timezone string   `json:"timezone"`
-	Location []string `json:"location"`
+	City     string    `json:"city"`
+	Country  string    `json:"country"`
+	Timezone string    `json:"timezone"`
+	Location []float32 `json:"location"`
 }
 
 // DashboardData holds dashboard data information
@@ -126,6 +126,7 @@ type Administrative struct {
 func authenticateToNetatmo() *NetatmoAuth {
 	var netatmoAuth = new(NetatmoAuth)
 
+	// Set form values
 	payload := url.Values{}
 	payload.Set("grant_type", "password")
 	payload.Set("scope", "read_station")
@@ -134,13 +135,18 @@ func authenticateToNetatmo() *NetatmoAuth {
 	payload.Set("username", os.Getenv("NETATMO_USERNAME"))
 	payload.Set("password", os.Getenv("NETATMO_PASSWORD"))
 
+	// Perform HTTP request
 	req, _ := http.NewRequest("POST", APIUrl+"/oauth2/token", strings.NewReader(payload.Encode()))
 	req.Header.Add("User-Agent", UserAgent)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(payload.Encode())))
 
-	res, _ := http.DefaultClient.Do(req)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("HTTP request failed: " + err.Error())
+	}
 
+	// Parse response and unmarshal
 	defer res.Body.Close()
 	body, _ := ioutil.ReadAll(res.Body)
 
@@ -148,4 +154,33 @@ func authenticateToNetatmo() *NetatmoAuth {
 		log.Println("Error unmarshalling: " + err.Error())
 	}
 	return netatmoAuth
+}
+
+func getStationData(netatmoAuth *NetatmoAuth) *NetatmoResponse {
+	var netatmoResponse = new(NetatmoResponse)
+
+	// Set form values
+	payload := url.Values{}
+	payload.Set("access_token", netatmoAuth.AccessToken)
+
+	// Perform HTTP request
+	req, _ := http.NewRequest("POST", APIUrl+"/api/getstationsdata", strings.NewReader(payload.Encode()))
+	//req, _ := http.NewRequest("POST", "http://127.0.0.1:6666/api/getstationsdata", strings.NewReader(payload.Encode()))
+	req.Header.Add("User-Agent", UserAgent)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Length", strconv.Itoa(len(payload.Encode())))
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatal("HTTP request failed: " + err.Error())
+	}
+
+	// Parse response and unmarshal
+	defer res.Body.Close()
+	body, _ := ioutil.ReadAll(res.Body)
+
+	if err := json.Unmarshal(body, &netatmoResponse); err != nil {
+		log.Println("Error unmarshalling: " + err.Error())
+	}
+	return netatmoResponse
 }

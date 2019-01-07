@@ -17,6 +17,8 @@ func main() {
 		log.Fatal("Error reading environment configuration: " + err.Error())
 	}
 
+	// Authenticate to Netatmo and grab station data
 	netatmoAuth := authenticateToNetatmo()
-	log.Println(netatmoAuth.AccessToken)
+	stationData := getStationData(netatmoAuth)
+	log.Println(stationData)
 }
