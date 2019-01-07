@@ -2,6 +2,8 @@
 
 A Netatmo Weather Station RESTful server written in Golang.
 
+*This is a hobby project. Current status: WIP*
+
 More details:
 
 https://dev.netatmo.com/resources/technical/reference
