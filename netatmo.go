@@ -165,7 +165,6 @@ func getStationData(netatmoAuth *NetatmoAuth) *NetatmoResponse {
 
 	// Perform HTTP request
 	req, _ := http.NewRequest("POST", APIUrl+"/api/getstationsdata", strings.NewReader(payload.Encode()))
-	//req, _ := http.NewRequest("POST", "http://127.0.0.1:6666/api/getstationsdata", strings.NewReader(payload.Encode()))
 	req.Header.Add("User-Agent", UserAgent)
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Add("Content-Length", strconv.Itoa(len(payload.Encode())))
