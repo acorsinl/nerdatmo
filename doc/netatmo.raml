@@ -1,0 +1,31 @@
+#%RAML 1.0
+title: Netatmo API
+version: nan
+baseUri: https://api.netatmo.com
+mediaType: application/json
+types:
+    NetatmoAuth:
+        type: object
+        properties:
+            access_token: string
+            refresh_token: string
+            scope: array
+            expires_in: integer
+            expire_in: integer
+securitySchemes:
+    oauth_2_0: !include securitySchemes/oauth_2_0.raml
+securedBy: [ oauth_2_0 ]
+
+/oauth2:
+    /token:
+        post:
+            body:
+                application/json:
+            responses:
+                200:
+                    body:
+                        application/json:
+                            type: NetatmoAuth
+
+/api:
+    /getstationsdata:
