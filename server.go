@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -25,14 +24,9 @@ type Module struct {
 }
 
 func GetStations(w http.ResponseWriter, r *http.Request) {
-	currentTime := time.Now().UnixNano()
-	if nerdatmo.DataTime-currentTime > DataExpiry {
-		log.Println("Refreshing data")
-		netatmoAuth := authenticateToNetatmo()
-		nerdatmo.StationData = getStationData(netatmoAuth)
-		nerdatmo.DataTime = currentTime
-	}
-	// @todo check local time and double check against cache creation
+	// Check local time and compare with initial data
+	updateDataIfNeeded()
+
 	var station = new(Station)
 	for _, stationElement := range nerdatmo.StationData.Body.Devices {
 		station.Id = stationElement.Id
@@ -49,6 +43,9 @@ func GetStations(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetModules(w http.ResponseWriter, r *http.Request) {
+	// Check local time and compare with initial data
+	updateDataIfNeeded()
+
 	var modules []Module
 	stationId := mux.Vars(r)["stationId"]
 	for _, stationElement := range nerdatmo.StationData.Body.Devices {
@@ -65,6 +62,9 @@ func GetModules(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetModule(w http.ResponseWriter, r *http.Request) {
+	// Check local time and compare with initial data
+	updateDataIfNeeded()
+
 	stationId := mux.Vars(r)["stationId"]
 	moduleId := mux.Vars(r)["moduleId"]
 

@@ -25,6 +25,17 @@ type Nerdatmo struct {
 
 var nerdatmo Nerdatmo
 
+func updateDataIfNeeded() {
+	// Check local time and compare with initial data
+	currentTime := time.Now().UnixNano()
+	if nerdatmo.DataTime-currentTime > DataExpiry {
+		log.Println("Refreshing data")
+		netatmoAuth := authenticateToNetatmo()
+		nerdatmo.StationData = getStationData(netatmoAuth)
+		nerdatmo.DataTime = currentTime
+	}
+}
+
 func main() {
 	// Load environment configuration
 	if err := godotenv.Load(); err != nil {
